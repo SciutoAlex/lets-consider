@@ -1,6 +1,3 @@
-var say = require('say');
-
-
 function prompter(twilio, opts) {
 
   var twilio = twilio;
