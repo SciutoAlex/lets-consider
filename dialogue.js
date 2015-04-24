@@ -6,8 +6,6 @@ var fs = require('fs');
 var _ = require('lodash');
 
 
-
-
 var data = fs.readFileSync('synset-meta.json');
 var tree = JSON.parse(data);
 
