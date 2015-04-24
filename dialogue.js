@@ -1,5 +1,3 @@
-
-var prompt = require('prompt');
 var interfacer = require('./interfacer.js');
 var natural = require('natural');
 var nounInflector = new natural.NounInflector();
