@@ -40,6 +40,7 @@ ul.word-path li {
   float: left;
   height: 30px;
   background: #1292ff;
+  border-width:0;
   text-align: center;
   padding: 10px 10px 0px 30px;
   position: relative;
@@ -47,6 +48,7 @@ ul.word-path li {
   text-decoration: none;
   color: #fff;
   margin-bottom:10px;
+  border-left-color:red;
 }
 
 ul.word-path li:before {
@@ -61,7 +63,8 @@ ul.word-path li:after {
   content: "";  
   border-top: 20px solid transparent;
   border-bottom: 20px solid transparent;
-  border-left: 20px solid #1292ff;
+  border-left: 20px solid;
+  border-left-color:inherit;
   position: absolute; right: -20px; top: 0;
   z-index: 1;
 }
@@ -76,6 +79,8 @@ ul.word-path li:after {
 }
 
 #area-code {
+  background: #1292ff;
+  border-left-color:#1292ff;
   padding:10px 15px 0px 20px;
   border-radius: 4px 0px 0px 4px;
 }
@@ -83,6 +88,7 @@ ul.word-path li:after {
 #area-code:before {
   display:none;
 }
+
 .positive #final-word {
   background:#5fba1c;
 }
