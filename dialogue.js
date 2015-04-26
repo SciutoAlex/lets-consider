@@ -18,11 +18,13 @@ var chunks = {
     ['entity.n.1', 'to Explore more complex ideas.', 100001740],
     ['person.n.1', 'if you are thinking about A person or human.', 100007846],
     ['human action.n.1', 'if you are thinking about a human act, action, or activity.', 100030657],
-    ['substance.n.7', 'if you are thinking about a physical substance such as foods, materials, or chemicals.', 100020270],
-    ['organism.n.1', 'if you are thinking about a living organism such as a person or animal.', 100004475],
-    ['feeling.n.1', 'if you are thinking about a feeling or emotion.', 100026390],
-    ['artifact.n.1','if you are thinking about A human-made object.', 100022119],
-    ['abstract entity.n.1','if you are thinking about An abstract idea or concept.', 100002137],
+    ['organism.n.1', 'if you are thinking about a living organism such as an animal.', 100004475],
+    ['substance.n.7', 'if you are thinking about a physical substances such spaghetti, rawhide, or einsteinium.', 100020270],
+    ['feeling.n.1', 'if you are thinking about a feeling or emotion such as hope, complacency, or passion.', 100026390],
+    ['artifact.n.1','if you are thinking about human-made objects such as a fishnet, a violin, or a pair of trousers.', 100022119],
+    ['','if you are thinking about a location such as a piazza, a playground, or a breadbasket', 100027365],
+    ['','if you are thinking about a communication between two people such as an opera, a recipe, or a chortle', 100027365],
+    ['','if you are thinking about organic processes such as foreplay, farting, or evolution, ', 113547313],
   ],
   noun : [
     ['physical entity.n.1','if it is a Physical Object', 100001930],
@@ -39,10 +41,11 @@ var chunks = {
 
 
 
-function dialogue(twilio, response) {
+function dialogue(twilio, redis, response, phoneCallMeta) {
 
+  var redisClient = redis;
   var offset = 0;
-  var maxOptions = 7;
+  var maxOptions = 9;
   var backSymbol = '*';
   var backSymbolSpoke = 'star';
   var nextSymbol = '#';
@@ -62,20 +65,21 @@ function dialogue(twilio, response) {
 
 
   function initialQuestion() {
-    promptDisplay.appendString('What\'s on your mind.');
-    promptDisplay.appendPause();
-    promptDisplay.appendString('Listen to the options, and let\'s explore your thoughts.');
-    
+    promptDisplay.appendString('What\'s on your mind? Take a moment and listen to your thoughts.');
+    promptDisplay.appendPause(3);
+    promptDisplay.appendString('Okay. Now, Listen to the options, and let\'s explore what you are thinking about.');
+    promptDisplay.appendPause(1);
     currentStepData = {
       type : 'start', 
       data : ''
     };
 
     steps.push(currentStepData);
-    for (var i = 1; i < chunks.simpleNoun.length-1; i++) {
+    for (var i = 1; i < chunks.simpleNoun.length; i++) {
       var word = chunks.simpleNoun[i][0];
       var string = chunks.simpleNoun[i][1];
       promptDisplay.appendString('enter ' + i + ', ' + string);
+      promptDisplay.appendPause(1);
       availableOpts.push('' + i);
     }; 
 
@@ -83,6 +87,10 @@ function dialogue(twilio, response) {
     var string = chunks.simpleNoun[0][1];
     promptDisplay.appendString('enter ' + 0 + ', ' + string);
     availableOpts.push('' + 0);
+    promptDisplay.appendPause(1);
+    promptDisplay.appendString('enter star to hear these options again.');
+    availableOpts.push('*');
+
     promptDisplay.outputPrompt(response);
   }
 
@@ -93,8 +101,12 @@ function dialogue(twilio, response) {
     switch(currentStepData.type) {
       case 'start':
         if(isOpt(digit)) {
-          var id = chunks.simpleNoun[digit][2];
-          newSynset(id);
+          if(digit == '*') {
+            initialQuestion(response);
+          } else {
+            var id = chunks.simpleNoun[digit][2];
+            newSynset(id);
+          }
         } else {
           promptDisplay.appendString('Oops that\'s an incorrect entry. Let\'s try again?');
           initialQuestion(response);
@@ -141,7 +153,7 @@ function dialogue(twilio, response) {
     steps.push({
       type: 'synset',
       synsetid: synsetid,
-      word: createLabel(_.find(tree, {id : synsetid}), 1)
+      word: createLabel(_.find(tree, {id : synsetid}), 2)
     });
 
     currentStepData = steps[steps.length-1];
@@ -154,11 +166,11 @@ function dialogue(twilio, response) {
     
     
 
-    
-
+  
     availableOpts = [];
     offset = 0;
     promptDisplay.appendString(genericSentence(nounInflector.pluralize(createLabel(currentSynsetData,1))));
+    promptDisplay.appendPause();
     displaySynsetOptions();
   }
 
@@ -228,12 +240,15 @@ function dialogue(twilio, response) {
 
   function displaySynsetOptions() {
 
-      
+      console.log(offset);
+
       var count = 0;
       var options = currentSynsetData.synsets;
+      console.log(options.length);
       var optionsToShow = options.length - offset + 1;
 
-      var totalOptions = 9;
+      availableOpts = [];
+      var totalOptions = maxOptions;
       if(optionsToShow >= totalOptions) {
         optionsToShow = totalOptions;
       }
@@ -241,11 +256,14 @@ function dialogue(twilio, response) {
       for (var i = 0; i < optionsToShow-1; i++) {
         availableOpts.push(i+1 + '');
         promptDisplay.appendString(i+1 + ' for ' + createLabel(options[offset + i]));
+        promptDisplay.appendPause();
         console.log(createLabel(options[offset + i]));
       }
 
-      promptDisplay.appendPause();
-      if(offset - optionsToShow >= 0) {
+      availableOpts.push('9');
+      promptDisplay.appendString('9 if ' + createLabel(currentSynsetData) + ' is what is annoying you today.');
+
+      if(offset - optionsToShow + 1 >= 0) {
         availableOpts.push('*');
         promptDisplay.appendString('star to hear previous options for ' + createLabel(currentSynsetData) + '.');
       }
@@ -261,11 +279,8 @@ function dialogue(twilio, response) {
         promptDisplay.appendString('Zero to hear return to ' + createLabel(previousSynsetData) + '.');
       }
       
-      
+    
 
-      promptDisplay.appendPause();
-      availableOpts.push('9');
-      promptDisplay.appendString('9 if ' + createLabel(currentSynsetData) + ' is what is annoying you today.');
       promptDisplay.outputPrompt(response);
     }
 
@@ -276,7 +291,7 @@ function dialogue(twilio, response) {
     steps.push({
       type: 'word',
       id: synsetid,
-      word: createLabel(_.find(tree, {id : synsetid}), 1)
+      word: createLabel(_.find(tree, {id : synsetid}), 2)
     });
 
     previousStepData = steps[steps.length-2];
@@ -297,6 +312,7 @@ function dialogue(twilio, response) {
 
   function displaySuccessfulSynsetOptions() {
     promptDisplay.appendString('Ah! I think we are getting close to your anxiety. Let\'s find out what exact kind of ' + createLabel(currentSynsetData, 1) + ' is bothering you.');
+    promptDisplay.appendPause();
     var totalOpts = maxOptions;
     if(currentSynsetData.label.length < maxOptions) {
       totalOpts = currentSynsetData.label.length;
@@ -338,7 +354,6 @@ function dialogue(twilio, response) {
   }
 
   function displaySuccessfulWordOptions() {
-    console.log('running displaySuccessfulWordOptions');
     var word = currentStepData.word;
     availableOpts = ['1','2','3','0'];
     promptDisplay.appendString('I think we have finally gotten to the bottom of your problem. I believe that ' + nounInflector.pluralize(word) + ' are causing you anxiety today. Do you think I\'m correct?');
@@ -371,9 +386,19 @@ function dialogue(twilio, response) {
   }
 
   function success(feeling) {
-    console.log(steps);
-    console.log(feeling);
+    steps.push({
+      type:"feeling",
+      value: feeling
+    });
+
+    var string = JSON.stringify({
+      id : phoneCallMeta.CallSid,
+      steps : steps,
+      phoneNumber : phoneCallMeta.Caller
+    });
+
     promptDisplay.end(response);
+    redisClient.lpush('calls', string);
   }
 
 
@@ -428,24 +453,6 @@ function dialogue(twilio, response) {
       return ourSentence.replace(/\*\*\*/g, string);
     }
 
-    function responseTracker() {
-      var opts = {};
-      this.clearOpts = function() {
-        opts = {};
-      }
-
-      this.addOpt = function(digit, event) {
-        opts[digit] = event;
-      }
-
-      this.getOpts = function() {
-        return opts;
-      }
-
-      this.getOpt = function(digit) {
-        return opts[digit];
-      }
-    }
 }
 
 

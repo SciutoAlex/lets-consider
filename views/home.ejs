@@ -1,0 +1,45 @@
+<!DOCTYPE html>  
+<html lang="en">  
+  <head>
+    <meta charset="utf-8">
+    <title>Pivotal Search</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <script src="//use.typekit.net/hyq8ufd.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- styles -->
+    <link href="css/reset.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+
+  </head>
+  <body>
+  <header>
+    <div class="center">
+      <h1>Let's Consider...</h1>
+      <p>Take a moment, consider your thoughts, and call</p>
+      <h2>314 222 0893</h2>
+    </div>
+  </header>
+  <ul>
+    <% data.forEach(function(list) { %>
+        <li class="center <%= list.feeling %> call">
+          <h3><%= list.finalWord %></h3>
+          <ul class="word-path">
+          <li id="area-code"><%= list.areaCode %></li>
+           <% list.wordTrail.forEach(function(word) { %>
+              <li> <%= word %> </li>
+           <% }); %>
+           <li id="final-word"><%= list.finalWord %></li>
+           </ul>
+        </li>
+    <% }); %>
+  </ul>
+  </body>
+</html> 

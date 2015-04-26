@@ -1,9 +1,7 @@
 function prompter(twilio, opts) {
 
   var twilio = twilio;
-  var mode = "console";
-  var delimiter = '----------------------';
-  var currentString = "";
+  var currentStrings = [];
 
   var voice = opts.voice || "Alex";
   if(opts.mode) {
@@ -28,7 +26,17 @@ function prompter(twilio, opts) {
   function twiMLPrompt(response) {
     var resp = new twilio.TwimlResponse();
     resp.gather({ timeout:10, numDigits:1, finishOnKey: "" }, function() {
-      this.say(currentString);
+      for(var i = 0; i < currentStrings.length; i++) {
+        console.log(currentStrings[i]);
+        if(currentStrings[i].type === "pause") {
+          this.pause({length : currentStrings[i].pauseLength});
+        } else {
+          this.say(currentStrings[i].string, {
+            voice:'man',
+            language:'en-US'
+          });
+        }
+      }
     });
     response.writeHead(200, {'Content-Type': 'text/xml'});
     response.end(resp.toString());
@@ -46,22 +54,23 @@ function prompter(twilio, opts) {
   }
 
 
-  this.appendPause =function() {
-    if(mode == "spoken" || mode == "twilio") {
-      currentString += ". ";
-    } else {
-      currentString += "----------------\n";
-    }
-  }
+  this.appendPause =function(n) {
+    var length = n || 1;
+    currentStrings.push({
+      type: "pause",
+      pauseLength : length
+    });
+  };
+
   this.appendString = function(str) {
-    currentString += str + "\n";
-    if(mode == "spoken" || mode == "twilio") {
-      currentString += ",";
-    }
+    currentStrings.push({
+        type: "spoken",
+        string : str
+      });
   }
 
   this.resetString = function() {
-    currentString = "";
+    currentStrings = [];
   }
 
   this.end = function(response) {

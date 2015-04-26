@@ -30,12 +30,12 @@ var client = twilio(accountSid, authToken);
 
 var callList = [];
 
-function phoneTree(app) {
+function phoneTree(app, redis) {
   app.post('/phone', function(request, response) {
     var thisCallMetaData = request.body;
     var thisCall = _.find(callList, {id : thisCallMetaData.CallSid});
     if(typeof thisCall == "undefined") {
-      var dialogue = new Dialogue(twilio, response);
+      var dialogue = new Dialogue(twilio, redis, response, thisCallMetaData);
       callList.push({
         dialogue : dialogue,
         id : thisCallMetaData.CallSid,
