@@ -20,7 +20,7 @@
     <script type="text/javascript">
     $(function() {
 
-      var reloadTime = 10000;
+      var reloadTime = 30000;
       var timeOutHandle = setTimeout(function() {
         location.reload();
       }, reloadTime);
@@ -77,7 +77,7 @@
         <li class="center <%= list.feeling %> call">
           <h3><%= list.finalWord %></h3>
           <ul class="word-path">
-          <li id="area-code"><%= list.areaCode %></li>
+          <li id="area-code"><%= list.areaCode %> <span><%= list.state %></span></li>
            <% list.wordTrail.forEach(function(word) { %>
               <li class="word-synset"> <%= word %> </li>
            <% }); %>

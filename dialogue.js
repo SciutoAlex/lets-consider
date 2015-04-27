@@ -12,7 +12,6 @@ var tree = JSON.parse(data);
 
 
 
-
 var chunks = {
   simpleNoun : [
     ['entity.n.1', 'to Explore more complex ideas.', 100001740],
@@ -58,6 +57,10 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
   var previousSynsetData;
   var currentStepData;
   var previousStepData;
+  var lpushVal = "";
+  var lpushVal = redisClient.rpush("calls", "{}", function(e,i) {
+    lpushVal = i-1;
+  });
 
 
   var currentChoices = {};
@@ -97,7 +100,6 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
   this.update = function(r, digit) {
     response = r;
     promptDisplay.resetString();
-    console.log(currentStepData.type);
     switch(currentStepData.type) {
       case 'start':
         if(isOpt(digit)) {
@@ -149,12 +151,14 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
 
   function newSynset(synsetid) {
-    
+    console.log(steps);
     steps.push({
       type: 'synset',
       synsetid: synsetid,
       word: createLabel(_.find(tree, {id : synsetid}), 2)
     });
+    console.log(steps);
+    saveToRedis();
 
     currentStepData = steps[steps.length-1];
     previousStepData = steps[steps.length-2];
@@ -215,7 +219,9 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
       break;
       case '0' : 
         if(previousStepData.type === 'start') {
+          steps = [];
           initialQuestion();
+
         } else {
           steps.pop();
           var poppedSynset = steps.pop();
@@ -240,11 +246,9 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
   function displaySynsetOptions() {
 
-      console.log(offset);
 
       var count = 0;
       var options = currentSynsetData.synsets;
-      console.log(options.length);
       var optionsToShow = options.length - offset + 1;
 
       availableOpts = [];
@@ -255,9 +259,9 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
       for (var i = 0; i < optionsToShow-1; i++) {
         availableOpts.push(i+1 + '');
-        promptDisplay.appendString(i+1 + ' for ' + createLabel(options[offset + i]));
+        var examples = generateExamples(options[offset + i])
+        promptDisplay.appendString(i+1 + ' for ' + createLabel(options[offset + i]) + (examples ? " " : ".") + examples);
         promptDisplay.appendPause();
-        console.log(createLabel(options[offset + i]));
       }
 
       availableOpts.push('9');
@@ -293,22 +297,24 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
       id: synsetid,
       word: createLabel(_.find(tree, {id : synsetid}), 2)
     });
+    saveToRedis();
 
     previousStepData = steps[steps.length-2];
     currentStepData = steps[steps.length-1];
     previousSynsetData = currentSynsetData;
     currentSynsetData = _.find(tree, {id : synsetid});
 
-    console.log(currentSynsetData);
     console.log(currentSynsetData.label.length);
     if(currentSynsetData.label.length === 1) {
-      console.log('word found');
       successfulWordFound(currentSynsetData.label[0]);
     } else {
-      console.log('synonyms found');
       displaySuccessfulSynsetOptions();
     }
   }
+
+  
+
+
 
   function displaySuccessfulSynsetOptions() {
     promptDisplay.appendString('Ah! I think we are getting close to your anxiety. Let\'s find out what exact kind of ' + createLabel(currentSynsetData, 1) + ' is bothering you.');
@@ -334,7 +340,6 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
     } else if (digit === "0") {
       steps.pop();
       var poppedSynset = steps.pop();
-      console.log(poppedSynset);
       newSynset(poppedSynset.synsetid); 
     }
   }
@@ -346,6 +351,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
       type: 'success',
       word: word
     });
+    saveToRedis();
 
     previousStepData = steps[steps.length-2];
     currentStepData = steps[steps.length-1];
@@ -391,43 +397,23 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
       value: feeling
     });
 
+    saveToRedis();
+
+    promptDisplay.end(response);
+    
+  }
+
+  function saveToRedis() {
     var string = JSON.stringify({
       id : phoneCallMeta.CallSid,
       steps : steps,
       phoneNumber : phoneCallMeta.Caller
     });
-
-    promptDisplay.end(response);
-    redisClient.lpush('calls', string);
+    redisClient.lset("calls", lpushVal, string);
   }
 
 
-  function createLabel(synsetMeta, num) {
-    var number = num || 2;
-    var returnString = [];
-    var labels = synsetMeta.label;
 
-    if(labels.length == 0) {
-      return 'no label';
-    }
-    if(labels.length == 1) {
-      return labels[0];
-    }
-
-    if(number === 1) {
-      return labels[0];
-    } else if (number === 2) {
-      return labels[0] + ' or ' + labels[1];
-    } else {
-      var str = '';
-      for (var i = 0; i < labels.length - 1; i++) {
-        str += labels[i] + ', ';
-      };
-      str += ', or ' + labels[labels.length-1];
-      return str;
-    }
-    
-  }
 
 
     function genericSentence(string) {
@@ -455,6 +441,64 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
 }
 
+function generateExamples(synset) {
+  
+  var results = [];
+  for (var i = 3 - 1; i >= 0; i--) {
+    var finished = false;
+    var currentSynset = _.find(tree, {id : synset.id});
+    var currentSynsetLabels = currentSynset.label;
+    while(!finished) {
+      currentSynset = _.find(tree, {id : currentSynset.id});
+      var childSynsets = currentSynset.synsets;
+      var nextSynset = _.sample(childSynsets);
+      if(!nextSynset) {
+        finished = true;
+        var label = _.sample(currentSynset.label);
+        if((results.indexOf(label) == -1) && (currentSynsetLabels.indexOf(label) == -1)) {
+          results.push(label);
+        }
+      } else {
+        currentSynset = nextSynset;
+      }
+    }
+  }
+  if(results.length == 0) {
+    return "";
+  } else if (results.length == 1) {
+    return "such as " + results[0];
+  } else if (results.length == 2) {
+    return "such as " + results[0] + " or " + results[1];;
+  } else if (results.length == 3) {
+    return "such as " + results[0] + ', ' + results[1] + ', or ' + results[2];
+  }
+}
+
+function createLabel(synsetMeta, num) {
+  var number = num || 2;
+  var returnString = [];
+  var labels = synsetMeta.label;
+
+  if(labels.length == 0) {
+    return 'no label';
+  }
+  if(labels.length == 1) {
+    return labels[0];
+  }
+
+  if(number === 1) {
+    return labels[0];
+  } else if (number === 2) {
+    return labels[0] + ' or ' + labels[1];
+  } else {
+    var str = '';
+    for (var i = 0; i < labels.length - 1; i++) {
+      str += labels[i] + ', ';
+    };
+    str += ', or ' + labels[labels.length-1];
+    return str;
+  }  
+}
 
 
 

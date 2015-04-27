@@ -13,6 +13,7 @@
     "lodash": "^3.7.0",
     "moment": "^2.10.2",
     "natural": "^0.2.1",
+    "object.observe": "^0.2.4",
     "redis": "^0.12.1",
     "twilio": "^2.0.0"
   },
