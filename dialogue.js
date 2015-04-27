@@ -317,7 +317,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
 
   function displaySuccessfulSynsetOptions() {
-    promptDisplay.appendString('Ah! I think we are getting close to your anxiety. Let\'s find out what exact kind of ' + createLabel(currentSynsetData, 1) + ' is bothering you.');
+    promptDisplay.appendString('I hope your thoughts have grown more precise through this process. We are almost at the end. Tell me, what kind of ' + createLabel(currentSynsetData, 1) + ' you are thinking about.');
     promptDisplay.appendPause();
     var totalOpts = maxOptions;
     if(currentSynsetData.label.length < maxOptions) {
@@ -362,7 +362,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
   function displaySuccessfulWordOptions() {
     var word = currentStepData.word;
     availableOpts = ['1','2','3','0'];
-    promptDisplay.appendString('I think we have finally gotten to the bottom of your problem. I believe that ' + nounInflector.pluralize(word) + ' are causing you anxiety today. Do you think I\'m correct?');
+    promptDisplay.appendString(nounInflector.pluralize(word) + ' are a worthwhile thing to think about. As you think about ' + nounInflector.pluralize(word) + ' how do you feel?');
     promptDisplay.appendPause();
     promptDisplay.appendString('Enter one if this word gives you a positive or warm feeling.');
     promptDisplay.appendString('Enter two if this word gives you a negative or cold feeling.');
@@ -444,10 +444,14 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 function generateExamples(synset) {
   
   var results = [];
-  for (var i = 3 - 1; i >= 0; i--) {
+  var currentSynset = _.find(tree, {id : synset.id});
+  var currentSynsetLabels = currentSynset.label;
+  var labelsToCheckAgainst = _.clone(currentSynsetLabels);
+  for (var i = 10 - 1; i >= 0; i--) {
     var finished = false;
-    var currentSynset = _.find(tree, {id : synset.id});
-    var currentSynsetLabels = currentSynset.label;
+    currentSynset = _.find(tree, {id : synset.id});
+    currentSynsetLabels = currentSynset.label;
+    
     while(!finished) {
       currentSynset = _.find(tree, {id : currentSynset.id});
       var childSynsets = currentSynset.synsets;
@@ -455,21 +459,33 @@ function generateExamples(synset) {
       if(!nextSynset) {
         finished = true;
         var label = _.sample(currentSynset.label);
-        if((results.indexOf(label) == -1) && (currentSynsetLabels.indexOf(label) == -1)) {
+        var minDist = 0;
+        for (var j = labelsToCheckAgainst.length - 1; j >= 0; j--) {
+          var tempDist = natural.JaroWinklerDistance(labelsToCheckAgainst[j], label);
+          if(tempDist > minDist) { minDist = tempDist; }
+        };
+        if(minDist < .8) {
           results.push(label);
+          labelsToCheckAgainst.push(label);
+
         }
       } else {
         currentSynset = nextSynset;
       }
     }
   }
+
+  results.sort(function(a,b) {
+    a.length - b.length;
+  });
+
   if(results.length == 0) {
     return "";
   } else if (results.length == 1) {
     return "such as " + results[0];
   } else if (results.length == 2) {
     return "such as " + results[0] + " or " + results[1];;
-  } else if (results.length == 3) {
+  } else if (results.length >= 3) {
     return "such as " + results[0] + ', ' + results[1] + ', or ' + results[2];
   }
 }
