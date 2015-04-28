@@ -13,7 +13,18 @@ if (process.env.REDISTOGO_URL) {
   var redis = require("redis").createClient();
 }
 
-
+  redis.lrange('calls', 0, -1, function (error, items) {
+    var data = [];
+    if (error) throw error
+    for (var i = items.length - 1; i >= 0; i--) {
+      var item = items[i];
+      item = JSON.parse(item);
+      if(item.steps) {
+        data.push(processPhoneData(item));
+      }
+    }
+    response.render('home.ejs', {data : data});
+  });
 
 app.set('view engine', 'ejs');  
 app.set('port', (process.env.PORT || 5000));
@@ -59,9 +70,6 @@ function processPhoneData(data) {
     objToReturn.areaCode = null;
   }
 
-  if((objToReturn.areaCode == "314") && (Math.random() < .3)) {
-    objToReturn.areaCode  = _.sample(areaCodes).areaCode;
-  }
 
   var state = _.find(areaCodes, {areaCode : objToReturn.areaCode});
   if(state) {
