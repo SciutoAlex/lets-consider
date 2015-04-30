@@ -209,7 +209,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
         directQuestion(8);
       break;
       case '*' : 
-        offset -= maxOptions;
+        offset -= maxOptions-1;
         promptDisplay.appendString('okay here are previous options for ' + createLabel(currentSynsetData));
         displaySynsetOptions();
       break;
@@ -217,7 +217,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
         successfulSynsetFound(currentSynsetData.id);
       break;
       case '#' : 
-        offset += maxOptions;
+        offset += maxOptions-1;
         promptDisplay.appendString('okay here are more options for ' + createLabel(currentSynsetData));
         displaySynsetOptions();
       break;
@@ -263,7 +263,8 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
       for (var i = 0; i < optionsToShow-1; i++) {
         availableOpts.push(i+1 + '');
-        var examples = generateExamples(options[offset + i])
+        var examples = generateExamples(options[offset + i]);
+        console.log('generated synset examples');
         promptDisplay.appendString(i+1 + ' for ' + createLabel(options[offset + i]) + (examples ? " " : ".") + examples);
         promptDisplay.appendPause();
       }
@@ -403,7 +404,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
 
     saveToRedis();
 
-    promptDisplay.end(response);
+    promptDisplay.end(response, nounInflector.pluralize(currentStepData.word));
     
   }
 

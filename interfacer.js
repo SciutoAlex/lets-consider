@@ -73,9 +73,9 @@ function prompter(twilio, opts) {
     currentStrings = [];
   }
 
-  this.end = function(response) {
-    var resp = new twilio.TwimlResponse();
-    resp.say("thank you for this experience");
+  this.end = function(response, word) {
+    var resp =new twilio.TwimlResponse();
+    resp.say('Thank you for this experience. All of your thoughts are meaningful in their own special way, particularly your thoughts about ' + word +'. I\'m glad we were able to share this moment together.');
     resp.hangup();
     response.writeHead(200, {'Content-Type': 'text/xml'});
     response.end(resp.toString());
