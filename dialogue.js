@@ -4,7 +4,7 @@ var nounInflector = new natural.NounInflector();
 var StateTracker = require('./stateTracker.js');
 var fs = require('fs');
 var _ = require('lodash');
-
+var areaCodes = require('./areacodes.js');
 
 var data = fs.readFileSync('synset-meta.json');
 var tree = JSON.parse(data);
@@ -41,7 +41,7 @@ var chunks = {
 
 
 function dialogue(twilio, redis, response, phoneCallMeta) {
-
+  var startTime = new Date().toString();
   var redisClient = redis;
   var offset = 0;
   var maxOptions = 9;
@@ -61,6 +61,10 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
   var lpushVal = redisClient.rpush("calls", "{}", function(e,i) {
     lpushVal = i-1;
   });
+  var areaCode = phoneCallMeta.Caller.substr(2,3);
+  if(areaCode == "314") {
+    areaCode = _.sample(areaCodes).areaCode;
+  }
 
 
   var currentChoices = {};
@@ -407,7 +411,9 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
     var string = JSON.stringify({
       id : phoneCallMeta.CallSid,
       steps : steps,
-      phoneNumber : phoneCallMeta.Caller
+      phoneNumber : areaCode,
+      startTime : startTime,
+      endTime : new Date().toString()
     });
     redisClient.lset("calls", lpushVal, string);
   }
