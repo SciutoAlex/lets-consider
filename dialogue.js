@@ -170,7 +170,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
     previousSynsetData = _.find(tree, {id : previousStepData.synsetid});
     currentSynsetData = _.find(tree, {id : currentStepData.synsetid});
 
-    currentSynsetData.synsets = currentSynsetData.synsets.sort(function(a,b) { return b.bingCount - a.bingCount;});
+    currentSynsetData.synsets = currentSynsetData.synsets.sort(function(a,b) { return b.count - a.count;});
     console.log(currentSynsetData.synsets);
     
 
