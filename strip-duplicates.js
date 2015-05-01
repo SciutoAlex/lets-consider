@@ -4,6 +4,9 @@ var fs = require('fs');
 var initialData = fs.readFileSync('synset-meta.json');
 initialData = JSON.parse(initialData);
 
+var bingData = fs.readFileSync('bing-data.json');
+bingData = JSON.parse(bingData);
+
 var newData = {};
 
 for (var i = initialData.length - 1; i >= 0; i--) {
@@ -14,5 +17,26 @@ for (var i = initialData.length - 1; i >= 0; i--) {
   }
 };
 
-fs.writeFile('synset-meta-no-duplicates.json', JSON.stringify(_.values(newData), null, 4));
+newData = _.values(newData);
+
+for (var i = newData.length - 1; i >= 0; i--) {
+  console.log('hi');
+  var thisSynset = newData[i];
+  if(thisSynset.synsets) {
+    for (var j = thisSynset.synsets.length - 1; j >= 0; j--) {
+      var thisSubSynset = thisSynset.synsets[j];
+      var maxReturn = 0;
+      for (var k = thisSubSynset.label.length - 1; k >= 0; k--) {
+        var thisLabel = thisSubSynset.label[k];
+        if(bingData[thisLabel] && maxReturn < bingData[thisLabel]) {
+          maxReturn = bingData[thisLabel];
+        }
+      }
+      thisSubSynset.bingCount = maxReturn;
+    };
+  }
+};
+
+
+fs.writeFile('bing-results-no-dupes.json', JSON.stringify(newData , null, 4));
 

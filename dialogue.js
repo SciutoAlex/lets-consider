@@ -6,7 +6,7 @@ var fs = require('fs');
 var _ = require('lodash');
 var areaCodes = require('./areacodes.js');
 
-var data = fs.readFileSync('synset-meta.json');
+var data = fs.readFileSync('bing-results-no-dupes.json');
 var tree = JSON.parse(data);
 
 
@@ -22,8 +22,8 @@ var chunks = {
     ['feeling.n.1', 'if you are thinking about a feeling or emotion such as hope, complacency, or passion.', 100026390],
     ['artifact.n.1','if you are thinking about human-made objects such as a fishnet, a violin, or a pair of trousers.', 100022119],
     ['','if you are thinking about a location such as a piazza, a playground, or a breadbasket', 100027365],
-    ['','if you are thinking about a communication between two people such as an opera, a recipe, or a chortle', 100027365],
     ['','if you are thinking about organic processes such as foreplay, farting, or evolution, ', 113547313],
+    ['','if you are thinking about an abstract concept such as the color purple, blink of an eye, or absurdity', 100002137]    
   ],
   noun : [
     ['physical entity.n.1','if it is a Physical Object', 100001930],
@@ -170,8 +170,8 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
     previousSynsetData = _.find(tree, {id : previousStepData.synsetid});
     currentSynsetData = _.find(tree, {id : currentStepData.synsetid});
 
-    currentSynsetData.synsets = currentSynsetData.synsets.sort(function(a,b) { return b.count - a.count;});
-    
+    currentSynsetData.synsets = currentSynsetData.synsets.sort(function(a,b) { return b.bingCount - a.bingCount;});
+    console.log(currentSynsetData.synsets);
     
 
   
