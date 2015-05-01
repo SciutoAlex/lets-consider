@@ -266,7 +266,7 @@ function dialogue(twilio, redis, response, phoneCallMeta) {
         var examples = generateExamples(options[offset + i]);
         console.log('generated synset examples');
         promptDisplay.appendString(i+1 + ' for ' + createLabel(options[offset + i]) + (examples ? " " : ".") + examples);
-        promptDisplay.appendPause();
+        // promptDisplay.appendPause();
       }
 
       availableOpts.push('9');

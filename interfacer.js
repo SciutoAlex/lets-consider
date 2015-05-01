@@ -26,15 +26,22 @@ function prompter(twilio, opts) {
   function twiMLPrompt(response) {
     var resp = new twilio.TwimlResponse();
     resp.gather({ timeout:10, numDigits:1, finishOnKey: "" }, function() {
+      var bufferString = "";
       for(var i = 0; i < currentStrings.length; i++) {
-        console.log(currentStrings[i]);
         if(currentStrings[i].type === "pause") {
+          console.log("pause");
           this.pause({length : currentStrings[i].pauseLength});
         } else {
-          this.say(currentStrings[i].string, {
-            voice:'man',
-            language:'en-US'
-          });
+          bufferString += currentStrings[i].string + ". ";
+          if(!currentStrings[i+1] || currentStrings[i+1].type !=="spoken") {
+            console.log(bufferString);
+            this.say(bufferString, {
+              voice:'man',
+              language:'en-US'
+            });
+            bufferString = "";
+          }
+          
         }
       }
     });
